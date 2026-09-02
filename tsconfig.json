@@ -1,0 +1,21 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./services/transaction-gateway" },
+    { "path": "./services/ledger-service" },
+    { "path": "./services/analytics-worker" }
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "types": ["node"]
+  }
+}

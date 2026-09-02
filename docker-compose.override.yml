@@ -1,0 +1,75 @@
+services:
+  transaction-gateway:
+    build:
+      context: .
+      target: gateway
+    container_name: swiftpay-gateway
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://swiftpay:swiftpay123@postgres:5432/swiftpay
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CLIENT_ID: transaction-gateway
+      KAFKA_GROUP_ID: swiftpay-gateway-group
+      TRANSACTION_GATEWAY_PORT: 3001
+    ports:
+      - "3001:3001"
+    networks:
+      - swiftpay-network
+
+  ledger-service:
+    build:
+      context: .
+      target: ledger
+    container_name: swiftpay-ledger
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://swiftpay:swiftpay123@postgres:5432/swiftpay
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CLIENT_ID: ledger-service
+      KAFKA_GROUP_ID: swiftpay-ledger-group
+      LEDGER_SERVICE_PORT: 3002
+      KAFKA_RETRY_ATTEMPTS: 5
+      KAFKA_RETRY_INITIAL_DELAY_MS: 1000
+      KAFKA_RETRY_MAX_DELAY_MS: 30000
+    ports:
+      - "3002:3002"
+    networks:
+      - swiftpay-network
+
+  analytics-worker:
+    build:
+      context: .
+      target: analytics
+    container_name: swiftpay-analytics
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://swiftpay:swiftpay123@postgres:5432/swiftpay
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CLIENT_ID: analytics-worker
+      KAFKA_GROUP_ID: swiftpay-analytics-group
+      ANALYTICS_WORKER_PORT: 3003
+    ports:
+      - "3003:3003"
+    networks:
+      - swiftpay-network

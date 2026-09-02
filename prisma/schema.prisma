@@ -1,0 +1,71 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  currency  String   @default("INR")
+  balance   Decimal  @default(0) @db.Decimal(19, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sentTransactions     Transaction[] @relation("sender")
+  receivedTransactions Transaction[] @relation("receiver")
+
+  @@map("User")
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  transactionId String   @unique
+  senderId      String
+  receiverId    String
+  amount        Decimal  @db.Decimal(19, 2)
+  currency      String   @default("INR")
+  status        Status   @default(PENDING)
+  failureReason String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  completedAt   DateTime?
+
+  sender   User @relation("sender", fields: [senderId], references: [id])
+  receiver User @relation("receiver", fields: [receiverId], references: [id])
+
+  @@index([transactionId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("Transaction")
+}
+
+model AnalyticsEvent {
+  id            String   @id @default(cuid())
+  transactionId String   @unique
+  senderId      String
+  receiverId    String
+  amount        Decimal  @db.Decimal(19, 2)
+  currency      String
+  completedAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([currency])
+  @@index([completedAt])
+  @@map("AnalyticsEvent")
+}
+
+enum Status {
+  PENDING
+  COMPLETED
+  FAILED
+}
