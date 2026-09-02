@@ -3,56 +3,181 @@ name: SwiftPay CI
 on:
   push:
     branches: [main, master]
+
   pull_request:
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
     services:
+
+      # ==========================================
+      # PostgreSQL
+      # ==========================================
       postgres:
         image: postgres:16-alpine
+
         env:
           POSTGRES_USER: swiftpay
           POSTGRES_PASSWORD: swiftpay123
           POSTGRES_DB: swiftpay
+
         ports:
           - 5432:5432
+
         options: >-
           --health-cmd="pg_isready -U swiftpay -d swiftpay"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
+
+
+      # ==========================================
+      # Redis
+      # ==========================================
       redis:
         image: redis:7-alpine
+
         ports:
           - 6379:6379
+
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+
+      # ==========================================
+      # Apache Kafka
+      # ==========================================
       kafka:
-        image: bitnami/kafka:3.7
-        env:
-          KAFKA_CFG_NODE_ID: 1
-          KAFKA_CFG_PROCESS_ROLES: broker,controller
-          KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@127.0.0.1:9093
-          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9092
-          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
-          KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-          KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-          ALLOW_PLAINTEXT_LISTENER: yes
+        image: apache/kafka:3.9.1
+
         ports:
           - 9092:9092
+
+        env:
+          KAFKA_NODE_ID: 1
+          KAFKA_PROCESS_ROLES: broker,controller
+
+          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+
+          KAFKA_LISTENERS: PLAINTEXT://localhost:9092,CONTROLLER://localhost:9093
+
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+
+          KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+          KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+          KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+          KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+          KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+          KAFKA_NUM_PARTITIONS: 3
+
+
+    # ==========================================
+    # Environment variables
+    # ==========================================
     env:
       DATABASE_URL: postgresql://swiftpay:swiftpay123@localhost:5432/swiftpay
+
       REDIS_URL: redis://localhost:6379
+
       KAFKA_BROKERS: localhost:9092
+
       NODE_ENV: test
+
+
+    # ==========================================
+    # Steps
+    # ==========================================
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      # ------------------------------------------
+      # Checkout
+      # ------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      # ------------------------------------------
+      # Node.js
+      # ------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - run: npx prisma generate
-      - run: npm run type-check --workspaces
-      - run: npm run build --workspaces
-      - run: npm test --workspaces -- --runInBand
+
+
+      # ------------------------------------------
+      # Install dependencies
+      # ------------------------------------------
+      - name: Install dependencies
+        run: npm ci
+
+
+      # ------------------------------------------
+      # Prisma
+      # ------------------------------------------
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+
+      # ------------------------------------------
+      # Database migrations
+      # ------------------------------------------
+      - name: Run database migrations
+        run: npx prisma migrate deploy
+
+
+      # ------------------------------------------
+      # Wait for Kafka
+      # ------------------------------------------
+      - name: Wait for Kafka
+        run: |
+          echo "Waiting for Kafka..."
+
+          for i in {1..30}; do
+            if nc -z localhost 9092; then
+              echo "Kafka is ready!"
+              exit 0
+            fi
+
+            echo "Kafka not ready yet..."
+            sleep 2
+          done
+
+          echo "Kafka failed to start"
+          exit 1
+
+
+      # ------------------------------------------
+      # TypeScript type check
+      # ------------------------------------------
+      - name: Type check
+        run: npm run type-check --workspaces
+
+
+      # ------------------------------------------
+      # Build
+      # ------------------------------------------
+      - name: Build
+        run: npm run build --workspaces
+
+
+      # ------------------------------------------
+      # Tests
+      # ------------------------------------------
+      - name: Run tests
+        run: npm test --workspaces -- --runInBand
