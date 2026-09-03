@@ -1,4 +1,4 @@
-```yml
+```yaml
 name: SwiftPay CI
 
 on:
@@ -33,7 +33,6 @@ jobs:
           --health-timeout=5s
           --health-retries=5
 
-
       # ==========================================
       # Redis
       # ==========================================
@@ -49,7 +48,6 @@ jobs:
           --health-timeout=5s
           --health-retries=5
 
-
       # ==========================================
       # Apache Kafka
       # ==========================================
@@ -62,29 +60,17 @@ jobs:
         env:
           KAFKA_NODE_ID: 1
           KAFKA_PROCESS_ROLES: broker,controller
-
           KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
-
           KAFKA_LISTENERS: PLAINTEXT://localhost:9092,CONTROLLER://localhost:9093
-
           KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-
           KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-
           KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-
           KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-
           KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-
           KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-
           KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-
           KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-
           KAFKA_NUM_PARTITIONS: 3
-
 
     # ==========================================
     # Environment variables
@@ -94,7 +80,6 @@ jobs:
       REDIS_URL: redis://localhost:6379
       KAFKA_BROKERS: localhost:9092
       NODE_ENV: test
-
 
     # ==========================================
     # Steps
@@ -107,7 +92,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-
       # ==========================================
       # Setup Node.js
       # ==========================================
@@ -115,7 +99,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
 
       # ==========================================
       # Check Node/npm versions
@@ -130,7 +113,6 @@ jobs:
 
           echo "npm cache:"
           npm config get cache
-
 
       # ==========================================
       # Debug npm lockfile
@@ -158,13 +140,11 @@ jobs:
           echo "=== npm version ==="
           npm --version
 
-
       # ==========================================
       # Install dependencies
       # ==========================================
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-
 
       # ==========================================
       # Verify installed dependencies
@@ -174,20 +154,17 @@ jobs:
           npm ls --depth=0
           npm ls @emnapi/core @emnapi/runtime || true
 
-
       # ==========================================
       # Prisma
       # ==========================================
       - name: Generate Prisma Client
         run: npx prisma generate
 
-
       # ==========================================
       # Database migrations
       # ==========================================
       - name: Run database migrations
         run: npx prisma migrate deploy
-
 
       # ==========================================
       # Wait for Kafka
@@ -209,20 +186,17 @@ jobs:
           echo "Kafka failed to start"
           exit 1
 
-
       # ==========================================
       # TypeScript type check
       # ==========================================
       - name: Type check
         run: npm run type-check --workspaces
 
-
       # ==========================================
       # Build
       # ==========================================
       - name: Build
         run: npm run build --workspaces
-
 
       # ==========================================
       # Tests
