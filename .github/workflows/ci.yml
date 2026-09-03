@@ -1,4 +1,3 @@
-```yaml
 name: SwiftPay CI
 
 on:
@@ -203,4 +202,3 @@ jobs:
       # ==========================================
       - name: Run tests
         run: npm test --workspaces -- --runInBand
-```
