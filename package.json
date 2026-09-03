@@ -21,17 +21,13 @@
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f"
   },
-
-   "prisma": {
+  "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },
-
-  
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^20.10.0",
     "@types/swagger-jsdoc": "^6.0.4",
-    "@types/swagger-ui-express": "^4.1.8",
     "@typescript-eslint/eslint-plugin": "^8.16.0",
     "@typescript-eslint/parser": "^8.16.0",
     "eslint": "^9.16.0",
