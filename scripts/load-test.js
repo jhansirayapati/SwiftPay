@@ -50,8 +50,8 @@ export default function () {
 
   const payload = JSON.stringify({
     transaction_id: transactionId,
-    sender_id: 'user_1',
-    receiver_id: 'user_2',
+    sender_id: 'user_001',
+    receiver_id: 'user_002',
     amount: 25.5,
     currency: 'INR',
   });

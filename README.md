@@ -2,7 +2,883 @@
 
 A distributed, event-driven payment processing system built with Node.js, TypeScript, Express, PostgreSQL, Kafka, and Redis.
 
-**Financial Correctness First**: This system prioritizes financial safety and consistency over premature optimization. All money transfers are atomic, idempotent, and double-spend safe.
+**Financial Correctness First**: This system prioritizes financial safety and consistency over premature optimization. All money transfers are # SwiftPay Real-Time Payment Ledger
+
+A distributed, event-driven real-time payment processing system built with **Node.js, TypeScript, Express, PostgreSQL, Apache Kafka, Redis, and Prisma**.
+
+> **Financial Correctness First:** SwiftPay prioritizes financial safety and consistency over premature optimization. Payment transfers are designed to be atomic, idempotent, concurrency-safe, and protected against double spending.
+
+---
+
+## Features
+
+* ✅ **Idempotent Payments** — Duplicate requests using the same transaction ID are safely handled.
+* ✅ **Atomic Transfers** — Debit and credit operations execute inside a PostgreSQL ACID transaction.
+* ✅ **Payload Verification** — Conflicting requests using an existing transaction ID are rejected.
+* ✅ **Event-Driven Processing** — Kafka is used for asynchronous payment settlement.
+* ✅ **Kafka Idempotency** — Duplicate payment events are safely handled.
+* ✅ **Safe Money Handling** — Decimal arithmetic is used instead of JavaScript floating-point calculations.
+* ✅ **Row-Level Locking** — PostgreSQL `FOR UPDATE` protects against concurrent balance updates.
+* ✅ **Clean Architecture** — Business logic is separated from HTTP routes.
+* ✅ **Structured Logging** — Pino provides structured logging with transaction context.
+* ✅ **API Documentation** — Swagger/OpenAPI documentation is available.
+* ✅ **Health Checks** — Services expose health endpoints.
+* ✅ **Dockerized Infrastructure** — PostgreSQL, Kafka, Redis, and supporting infrastructure run through Docker Compose.
+* ✅ **Automated Testing** — Jest tests cover critical payment behavior.
+* ✅ **CI Validation** — GitHub Actions validates the project.
+* ✅ **Performance Testing** — k6 load testing is implemented for 250 TPS benchmarking.
+
+---
+
+# Architecture
+
+```text
+                         ┌─────────────────┐
+                         │      Client     │
+                         └────────┬────────┘
+                                  │
+                                  │ POST /v1/payments
+                                  ▼
+                    ┌──────────────────────────┐
+                    │   Transaction Gateway    │
+                    │        Port 3001         │
+                    │                          │
+                    │ • Validation             │
+                    │ • Idempotency            │
+                    │ • User verification      │
+                    │ • Balance validation     │
+                    │ • Transaction creation   │
+                    └────────────┬─────────────┘
+                                 │
+                                 │ PaymentInitiated
+                                 ▼
+                         ┌───────────────┐
+                         │     Kafka     │
+                         └───────┬───────┘
+                                 │
+                                 ▼
+                    ┌──────────────────────────┐
+                    │      Ledger Service      │
+                    │        Port 3002         │
+                    │                          │
+                    │ • Row-level locking      │
+                    │ • Atomic settlement      │
+                    │ • Debit / credit         │
+                    │ • Transaction history    │
+                    └────────────┬─────────────┘
+                                 │
+                                 ▼
+                         ┌───────────────┐
+                         │  PostgreSQL   │
+                         │ Source of     │
+                         │ Truth         │
+                         └───────────────┘
+
+                         ┌───────────────┐
+                         │     Redis     │
+                         │ Idempotency   │
+                         └───────────────┘
+
+                         ┌───────────────┐
+                         │   Analytics   │
+                         │    Service    │
+                         │    Port 3003  │
+                         └───────────────┘
+```
+
+---
+
+# Technology Stack
+
+| Component         | Technology              |
+| ----------------- | ----------------------- |
+| Runtime           | Node.js                 |
+| Language          | TypeScript              |
+| API               | Express.js              |
+| ORM               | Prisma                  |
+| Database          | PostgreSQL              |
+| Messaging         | Apache Kafka            |
+| Cache             | Redis                   |
+| Validation        | Zod                     |
+| Logging           | Pino                    |
+| API Documentation | Swagger/OpenAPI         |
+| Testing           | Jest                    |
+| Load Testing      | k6                      |
+| Containers        | Docker / Docker Compose |
+| CI                | GitHub Actions          |
+
+---
+
+# Project Structure
+
+```text
+swiftpay/
+├── services/
+│   ├── transaction-gateway/
+│   ├── ledger-service/
+│   └── analytics-service/
+│
+├── prisma/
+├── scripts/
+│   └── load-test.js
+├── tests/
+├── .github/
+│   └── workflows/
+│
+├── docker-compose.yml
+├── ARCHITECTURE.md
+├── performance-report.md
+└── README.md
+```
+
+---
+
+# Prerequisites
+
+* Node.js 18+
+* npm 9+
+* Docker Desktop
+* Docker Compose
+* k6 for performance testing
+
+---
+
+# Quick Start
+
+## 1. Install Dependencies
+
+```bash
+npm install
+npm install --workspaces
+```
+
+Generate Prisma Client:
+
+```bash
+npm run prisma:generate
+```
+
+---
+
+## 2. Configure Environment
+
+Copy the environment file:
+
+```bash
+cp .env.example .env
+```
+
+Example:
+
+```env
+TRANSACTION_GATEWAY_PORT=3001
+LEDGER_SERVICE_PORT=3002
+
+DATABASE_URL=postgresql://swiftpay:swiftpay123@localhost:5434/swiftpay
+
+REDIS_URL=redis://localhost:6379
+
+KAFKA_BROKERS=localhost:9092
+KAFKA_CLIENT_ID=swiftpay-client
+KAFKA_GROUP_ID=swiftpay-group
+
+LOG_LEVEL=debug
+```
+
+---
+
+## 3. Start Infrastructure
+
+```bash
+npm run docker:up
+```
+
+View Docker logs:
+
+```bash
+npm run docker:logs
+```
+
+Infrastructure includes:
+
+```text
+PostgreSQL
+Kafka
+ZooKeeper
+Redis
+```
+
+---
+
+## 4. Set Up Database
+
+Run migrations:
+
+```bash
+npm run prisma:migrate
+```
+
+Synchronize the schema if required:
+
+```bash
+npx prisma db push
+```
+
+Seed test users:
+
+```bash
+npm run prisma:seed
+```
+
+---
+
+# Services
+
+## Transaction Gateway
+
+```bash
+cd services/transaction-gateway
+npm run dev
+```
+
+Gateway:
+
+```text
+http://localhost:3001
+```
+
+Swagger:
+
+```text
+http://localhost:3001/api-docs
+```
+
+Health:
+
+```text
+http://localhost:3001/health
+```
+
+---
+
+## Ledger Service
+
+```bash
+cd services/ledger-service
+npm run dev
+```
+
+Ledger:
+
+```text
+http://localhost:3002
+```
+
+Swagger:
+
+```text
+http://localhost:3002/api-docs
+```
+
+Health:
+
+```text
+http://localhost:3002/health
+```
+
+---
+
+## Analytics Service
+
+The Analytics Service consumes payment events from Kafka for analytics processing.
+
+```text
+http://localhost:3003
+```
+
+---
+
+# Test Accounts
+
+After seeding:
+
+```text
+user_001 - Alice Johnson  - ₹100,000.00
+user_002 - Bob Smith      - ₹50,000.00
+user_003 - Charlie Brown - ₹25,000.00
+```
+
+These accounts are intended for local development and testing.
+
+---
+
+# API Examples
+
+## Initiate Payment
+
+```bash
+curl -X POST http://localhost:3001/v1/payments \
+  -H "Content-Type: application/json" \
+  -d '{
+    "transaction_id": "txn_001",
+    "sender_id": "user_001",
+    "receiver_id": "user_002",
+    "amount": 500,
+    "currency": "INR"
+  }'
+```
+
+Response:
+
+```http
+HTTP 202 Accepted
+```
+
+```json
+{
+  "transactionId": "txn_001",
+  "status": "PENDING",
+  "senderId": "user_001",
+  "receiverId": "user_002",
+  "amount": "500.00",
+  "currency": "INR",
+  "createdAt": "2026-08-31T12:00:00.000Z"
+}
+```
+
+`202 Accepted` means the Transaction Gateway accepted the request and queued it for asynchronous settlement.
+
+---
+
+# Transaction History
+
+```bash
+curl "http://localhost:3002/v1/users/user_001/transactions?page=1&limit=10"
+```
+
+Example:
+
+```json
+{
+  "data": [
+    {
+      "id": "clk1...",
+      "transactionId": "txn_001",
+      "senderId": "user_001",
+      "receiverId": "user_002",
+      "amount": "500.00",
+      "status": "COMPLETED",
+      "failureReason": null,
+      "createdAt": "2026-08-31T12:00:00.000Z",
+      "completedAt": "2026-08-31T12:00:01.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 1
+  }
+}
+```
+
+---
+
+# Idempotency
+
+The same transaction ID and identical payload cannot create duplicate payment processing.
+
+```text
+Request 1
+    ↓
+Transaction created
+    ↓
+Request 2 with same transaction ID
+    ↓
+Existing result returned
+```
+
+---
+
+# Conflicting Duplicate
+
+If an existing transaction ID is submitted with a different payload:
+
+```http
+HTTP 409 Conflict
+```
+
+```json
+{
+  "error": {
+    "code": "DUPLICATE_TRANSACTION_CONFLICT",
+    "message": "Transaction ID already exists with different payload",
+    "details": null,
+    "timestamp": "2026-08-31T12:00:00.000Z"
+  }
+}
+```
+
+---
+
+# Insufficient Funds
+
+When the sender does not have sufficient balance:
+
+```http
+HTTP 402 Payment Required
+```
+
+```json
+{
+  "error": {
+    "code": "INSUFFICIENT_FUNDS",
+    "message": "Insufficient balance",
+    "details": null,
+    "timestamp": "2026-08-31T12:00:00.000Z"
+  }
+}
+```
+
+---
+
+# Payment Processing Flow
+
+```text
+1. Client
+      │
+      ▼
+2. POST /v1/payments
+      │
+      ▼
+3. Transaction Gateway
+      │
+      ├── Validate request
+      ├── Check idempotency
+      ├── Verify sender
+      ├── Verify receiver
+      ├── Check balance
+      └── Create PENDING transaction
+      │
+      ▼
+4. Kafka
+      │
+      │ PaymentInitiated
+      ▼
+5. Ledger Service
+      │
+      ├── Load transaction
+      ├── BEGIN transaction
+      ├── Lock sender row
+      ├── Verify sufficient funds
+      ├── Debit sender
+      ├── Credit receiver
+      ├── Mark COMPLETED
+      └── COMMIT
+      │
+      ▼
+6. Kafka
+      │
+      ├── PaymentCompleted
+      └── PaymentFailed
+```
+
+---
+
+# Financial Safety
+
+SwiftPay enforces:
+
+1. PostgreSQL as the source of truth.
+2. Decimal arithmetic for monetary values.
+3. Atomic debit and credit operations.
+4. Protection against negative sender balances.
+5. Idempotent payment requests.
+6. Idempotent Kafka event processing.
+7. PostgreSQL row-level locking during settlement.
+8. Separation of business logic from routes.
+9. Type-safe TypeScript implementation.
+10. Structured error handling and logging.
+
+---
+
+# Database Atomicity
+
+Settlement uses PostgreSQL transactions and row-level locking.
+
+Conceptually:
+
+```sql
+BEGIN;
+
+SELECT *
+FROM "User"
+WHERE id = 'user_001'
+FOR UPDATE;
+
+UPDATE "User"
+SET balance = balance - amount
+WHERE id = 'user_001';
+
+UPDATE "User"
+SET balance = balance + amount
+WHERE id = 'user_002';
+
+UPDATE "Transaction"
+SET status = 'COMPLETED'
+WHERE "transactionId" = 'txn_001';
+
+COMMIT;
+```
+
+The sender row lock prevents concurrent payments from spending the same available balance.
+
+---
+
+# Testing
+
+Run all workspace tests:
+
+```bash
+npm test --workspaces -- --runInBand
+```
+
+Run a specific service:
+
+```bash
+cd services/transaction-gateway
+npm run test
+```
+
+Watch mode:
+
+```bash
+npm run test:watch
+```
+
+Coverage:
+
+```bash
+npm run test:coverage
+```
+
+Test coverage includes:
+
+* Request validation
+* Payment processing
+* Insufficient funds
+* Idempotency
+* Conflicting transaction IDs
+* Concurrent payments
+* Atomic transfers
+* Kafka event idempotency
+
+---
+
+# Performance Testing
+
+SwiftPay includes a k6 performance test:
+
+```text
+scripts/load-test.js
+```
+
+Run:
+
+```powershell
+& "C:\Program Files\k6\k6.exe" run scripts/load-test.js
+```
+
+The benchmark targets:
+
+```text
+250 TPS
+60 seconds
+p95 < 500 ms
+HTTP failure rate < 1%
+0 dropped iterations
+```
+
+## Latest Measured Result
+
+```text
+Total requests:       15,001
+Achieved throughput:  249.98 TPS
+Dropped iterations:   0
+p95 latency:           55.98 ms
+p99 latency:          102.83 ms
+Maximum latency:      279.11 ms
+```
+
+The latest run returned `402 INSUFFICIENT_FUNDS` because the sender test account exhausted its balance.
+
+Therefore, these results represent **gateway throughput and rejection-path latency**, not successful payment settlement performance.
+
+Detailed results are available in:
+
+```text
+performance-report.md
+```
+
+---
+
+# Performance and Observability
+
+SwiftPay uses a distributed event-driven architecture separating payment acceptance, settlement, and analytics processing.
+
+### Key metrics
+
+* Gateway throughput
+* Gateway p95 latency
+* p90/p95/p99 latency
+* HTTP failure rate
+* Dropped iterations
+* Payment acceptance/rejection rate
+* Kafka event processing
+* PostgreSQL transaction behavior
+* Application logs
+
+Structured logging is implemented using Pino with transaction context.
+
+For production-scale deployments, additional monitoring can be added for:
+
+* Kafka consumer lag
+* PostgreSQL lock wait time
+* PostgreSQL connection pools
+* Redis latency
+* Node.js CPU and memory utilization
+* Container resource utilization
+* Distributed tracing
+* Alerting
+
+---
+
+# PCAP Network Evidence
+
+Network captures from performance testing can be stored alongside the benchmark documentation.
+
+Recommended structure:
+
+```text
+performance/
+├── performance-report.md
+└── swiftpay-250-tps.pcapng
+```
+
+The `.pcapng` capture can be inspected using Wireshark.
+
+---
+
+# Kafka
+
+List Kafka topics:
+
+```bash
+docker-compose exec kafka kafka-topics \
+  --bootstrap-server localhost:9092 \
+  --list
+```
+
+Consume payment events:
+
+```bash
+docker-compose exec kafka kafka-console-consumer \
+  --bootstrap-server localhost:9092 \
+  --topic swiftpay.payment.initiated \
+  --from-beginning
+```
+
+Kafka provides asynchronous communication between the payment processing services.
+
+---
+
+# Redis
+
+Redis is used for payment idempotency handling.
+
+It provides fast lookup of previously processed transaction IDs and helps prevent duplicate payment processing.
+
+---
+
+# Database Inspection
+
+Connect to PostgreSQL:
+
+```bash
+docker-compose exec postgres psql -U swiftpay -d swiftpay
+```
+
+View users:
+
+```sql
+SELECT id, name, balance
+FROM "User";
+```
+
+View transactions:
+
+```sql
+SELECT
+  "transactionId",
+  "senderId",
+  "receiverId",
+  amount,
+  status
+FROM "Transaction";
+```
+
+---
+
+# Docker
+
+Start infrastructure:
+
+```bash
+npm run docker:up
+```
+
+View logs:
+
+```bash
+npm run docker:logs
+```
+
+Stop infrastructure:
+
+```bash
+npm run docker:down
+```
+
+---
+
+# CI
+
+SwiftPay includes a GitHub Actions workflow for automated validation.
+
+The CI pipeline installs dependencies and runs the automated test suite.
+
+The current CI build has completed successfully.
+
+---
+
+# Current Implementation Status
+
+## Completed
+
+* ✅ Transaction Gateway
+* ✅ Ledger Service
+* ✅ Analytics Service
+* ✅ PostgreSQL persistence
+* ✅ Redis idempotency
+* ✅ Kafka event processing
+* ✅ Atomic money transfers
+* ✅ PostgreSQL row-level locking
+* ✅ Duplicate transaction protection
+* ✅ Transaction history
+* ✅ Structured logging
+* ✅ Swagger/OpenAPI
+* ✅ Docker Compose infrastructure
+* ✅ Automated tests
+* ✅ GitHub Actions CI
+* ✅ k6 performance test
+* ✅ 250 TPS load-test execution
+* ✅ Performance report
+
+## Additional Benchmark
+
+* ⏳ Full 1,000,000 transaction benchmark
+
+The 1M benchmark is intentionally not marked as completed because it was not executed and measured.
+
+At 250 TPS, 1,000,000 transactions would require approximately:
+
+```text
+66 minutes 40 seconds
+```
+
+---
+
+# Architecture Decisions
+
+## Why Node.js?
+
+Node.js provides an asynchronous runtime well suited to I/O-heavy APIs and event-driven services.
+
+## Why TypeScript?
+
+TypeScript provides compile-time type safety while retaining the Node.js ecosystem.
+
+## Why PostgreSQL?
+
+PostgreSQL provides:
+
+* ACID transactions
+* Strong consistency
+* Row-level locking
+* Reliable persistence
+* Decimal numeric support
+
+## Why Kafka?
+
+Kafka decouples payment acceptance from settlement and provides reliable event-driven communication.
+
+## Why Redis?
+
+Redis provides low-latency idempotency lookups.
+
+## Why Prisma?
+
+Prisma provides:
+
+* Type-safe database access
+* TypeScript integration
+* Database migrations
+* Decimal support
+* Clear database models
+
+---
+
+# Stopping Services
+
+Stop Docker infrastructure:
+
+```bash
+npm run docker:down
+```
+
+Stop local Node.js services with:
+
+```text
+Ctrl + C
+```
+
+---
+
+# Documentation
+
+Detailed architecture:
+
+```text
+ARCHITECTURE.md
+```
+
+Performance results:
+
+```text
+performance-report.md
+```
+
+Load-test implementation:
+
+```text
+scripts/load-test.js
+```
+
+---
+
+# License
+
+Confidential — SwiftPay Payment Systems
+atomic, idempotent, and double-spend safe.
 
 ## Features
 
