@@ -1,3 +1,4 @@
+```yaml
 name: SwiftPay CI
 
 on:
@@ -90,11 +91,8 @@ jobs:
     # ==========================================
     env:
       DATABASE_URL: postgresql://swiftpay:swiftpay123@localhost:5432/swiftpay
-
       REDIS_URL: redis://localhost:6379
-
       KAFKA_BROKERS: localhost:9092
-
       NODE_ENV: test
 
 
@@ -132,6 +130,33 @@ jobs:
 
           echo "npm cache:"
           npm config get cache
+
+
+      # ==========================================
+      # Debug npm lockfile
+      # ==========================================
+      - name: Debug npm lockfile
+        run: |
+          echo "=== Git commit ==="
+          git rev-parse HEAD
+
+          echo "=== Branch ==="
+          git branch --show-current
+
+          echo "=== Root files ==="
+          ls -la
+
+          echo "=== package.json ==="
+          node -e "const p=require('./package.json'); console.log(JSON.stringify({name:p.name,version:p.version,packageManager:p.packageManager,workspaces:p.workspaces},null,2))"
+
+          echo "=== Lockfile version ==="
+          node -e "const p=require('./package-lock.json'); console.log({lockfileVersion:p.lockfileVersion,name:p.name,version:p.version})"
+
+          echo "=== emnapi entries ==="
+          node -e "const p=require('./package-lock.json'); for (const k of Object.keys(p.packages||{})) if(k.includes('emnapi')) console.log(k,p.packages[k].version)"
+
+          echo "=== npm version ==="
+          npm --version
 
 
       # ==========================================
@@ -204,3 +229,4 @@ jobs:
       # ==========================================
       - name: Run tests
         run: npm test --workspaces -- --runInBand
+```
