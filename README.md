@@ -73,6 +73,9 @@ cp .env.example .env
 # Run migrations
 npm run prisma:migrate
 
+# Sync database schema
+npx prisma db push
+
 # Seed database with test users
 npm run prisma:seed
 ```
@@ -355,7 +358,7 @@ TRANSACTION_GATEWAY_PORT=3001
 LEDGER_SERVICE_PORT=3002
 
 # Database (PostgreSQL)
-DATABASE_URL=postgresql://swiftpay:swiftpay123@localhost:5432/swiftpay
+DATABASE_URL=postgresql://swiftpay:swiftpay123@localhost:5434/swiftpay
 
 # Cache (Redis)
 REDIS_URL=redis://localhost:6379

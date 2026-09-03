@@ -1,0 +1,9 @@
+FROM node:20-alpine
+WORKDIR /test
+COPY package.json ./
+COPY package-lock.json ./
+COPY services/analytics-worker/package.json ./analytics-package.json
+RUN echo '--- ROOT PACKAGE ---' && wc -c package.json
+RUN echo '--- LOCK FILE ---' && wc -c package-lock.json
+RUN echo '--- ANALYTICS PACKAGE ---' && wc -c analytics-package.json
+RUN echo '--- CONTENT ---' && head -c 100 package.json

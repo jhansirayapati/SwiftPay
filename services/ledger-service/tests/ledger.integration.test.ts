@@ -1,15 +1,16 @@
 import { Decimal } from '@prisma/client/runtime/library';
+import { beforeEach, describe, it, expect, jest } from '@jest/globals';
 import { getLedgerService } from '../src/services/ledgerService';
 
 const mockTx = {
   transaction: {
-    findUnique: jest.fn(),
-    update: jest.fn(),
+    findUnique: jest.fn<() => Promise<Record<string, unknown> | null>>(),
+    update: jest.fn<() => Promise<Record<string, unknown>>>(),
   },
   user: {
-    update: jest.fn(),
+    update: jest.fn<() => Promise<Record<string, unknown>>>(),
   },
-  $queryRaw: jest.fn(),
+  $queryRaw: jest.fn<() => Promise<unknown[]>>(),
 };
 
 jest.mock('../src/repositories/transactionRepository', () => ({
@@ -19,7 +20,7 @@ jest.mock('../src/repositories/transactionRepository', () => ({
 }));
 
 jest.mock('../src/redis/client', () => ({
-  invalidateUserBalanceCache: jest.fn().mockResolvedValue(undefined),
+  invalidateUserBalanceCache: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
 }));
 
 describe('Ledger service integration', () => {

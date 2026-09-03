@@ -1,10 +1,11 @@
 import { Decimal } from '@prisma/client/runtime/library';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { analyticsRepository } from '../src/repositories/analyticsRepository';
 
 jest.mock('@prisma/client', () => {
-  const mockUpsert = jest.fn();
-  const mockAggregate = jest.fn();
-  const mockGroupBy = jest.fn();
+  const mockUpsert = jest.fn() as jest.Mock<any>;
+  const mockAggregate = jest.fn() as jest.Mock<any>;
+  const mockGroupBy = jest.fn() as jest.Mock<any>;
 
   return {
     PrismaClient: jest.fn(() => ({
@@ -14,16 +15,20 @@ jest.mock('@prisma/client', () => {
         groupBy: mockGroupBy,
       },
     })),
-    __mockControls: { mockUpsert, mockAggregate, mockGroupBy },
+    __mockControls: {
+      mockUpsert,
+      mockAggregate,
+      mockGroupBy,
+    },
   };
 });
 
 describe('Analytics worker', () => {
   const { __mockControls } = jest.requireMock('@prisma/client') as {
     __mockControls: {
-      mockUpsert: jest.Mock;
-      mockAggregate: jest.Mock;
-      mockGroupBy: jest.Mock;
+      mockUpsert: jest.Mock<any>;
+      mockAggregate: jest.Mock<any>;
+      mockGroupBy: jest.Mock<any>;
     };
   };
 
@@ -51,9 +56,12 @@ describe('Analytics worker', () => {
     expect(__mockControls.mockUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { transactionId: 'analytics_001' },
-        create: expect.objectContaining({ transactionId: 'analytics_001' }),
+        create: expect.objectContaining({
+          transactionId: 'analytics_001',
+        }),
       }),
     );
+
     expect(record.transactionId).toBe('analytics_001');
     expect(record.currency).toBe('INR');
   });
@@ -63,6 +71,7 @@ describe('Analytics worker', () => {
       _count: { transactionId: 2 },
       _sum: { amount: new Decimal('350.00') },
     });
+
     __mockControls.mockGroupBy.mockResolvedValue([
       {
         currency: 'INR',

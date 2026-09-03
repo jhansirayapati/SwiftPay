@@ -21,6 +21,12 @@
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f"
   },
+
+   "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
+
+  
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^20.10.0",

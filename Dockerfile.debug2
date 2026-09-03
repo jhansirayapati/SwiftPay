@@ -1,0 +1,10 @@
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+COPY services ./services
+COPY prisma ./prisma
+COPY tsconfig.json ./
+
+RUN echo '--- BEFORE NPM INSTALL ---' && wc -c package.json package-lock.json services/analytics-worker/package.json
+RUN npm install
+RUN echo '--- AFTER NPM INSTALL ---' && wc -c package.json package-lock.json services/analytics-worker/package.json
