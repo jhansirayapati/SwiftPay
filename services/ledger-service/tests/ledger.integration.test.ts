@@ -4,13 +4,21 @@ import { getLedgerService } from '../src/services/ledgerService';
 
 const mockTx = {
   transaction: {
-    findUnique: jest.fn<() => Promise<Record<string, unknown> | null>>(),
-    update: jest.fn<() => Promise<Record<string, unknown>>>(),
+    findUnique: jest.fn<
+      (...args: any[]) => Promise<Record<string, unknown> | null>
+    >(),
+    update: jest.fn<
+      (...args: any[]) => Promise<Record<string, unknown>>
+    >(),
   },
   user: {
-    update: jest.fn<() => Promise<Record<string, unknown>>>(),
+    update: jest.fn<
+      (...args: any[]) => Promise<Record<string, unknown>>
+    >(),
   },
-  $queryRaw: jest.fn<() => Promise<unknown[]>>(),
+  $queryRaw: jest.fn<
+    (...args: any[]) => Promise<unknown[]>
+  >(),
 };
 
 jest.mock('../src/repositories/transactionRepository', () => ({

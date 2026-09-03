@@ -2,10 +2,12 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { analyticsRepository } from '../src/repositories/analyticsRepository';
 
+type MockFn = jest.MockedFunction<(...args: any[]) => any>;
 jest.mock('@prisma/client', () => {
-  const mockUpsert = jest.fn() as jest.Mock<any>;
-  const mockAggregate = jest.fn() as jest.Mock<any>;
-  const mockGroupBy = jest.fn() as jest.Mock<any>;
+
+const mockUpsert = jest.fn() as MockFn;
+const mockAggregate = jest.fn() as MockFn;
+const mockGroupBy = jest.fn() as MockFn;
 
   return {
     PrismaClient: jest.fn(() => ({
@@ -26,9 +28,9 @@ jest.mock('@prisma/client', () => {
 describe('Analytics worker', () => {
   const { __mockControls } = jest.requireMock('@prisma/client') as {
     __mockControls: {
-      mockUpsert: jest.Mock<any>;
-      mockAggregate: jest.Mock<any>;
-      mockGroupBy: jest.Mock<any>;
+      mockUpsert: MockFn;
+      mockAggregate: MockFn;
+      mockGroupBy: MockFn;
     };
   };
 
